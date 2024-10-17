@@ -1,6 +1,6 @@
-import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
-import { exists } from "jsr:@std/fs@^1/exists";
-import { parse as parseYaml } from "jsr:@std/yaml";
+import { z } from "zod";
+import { exists } from "@std/fs/exists";
+import { parse as parseYaml } from "@std/yaml/parse";
 
 import { die } from "./_utils.ts";
 

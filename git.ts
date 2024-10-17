@@ -1,9 +1,9 @@
 #!/usr/bin/env -S deno run --allow-env --allow-read --allow-write --allow-run
 
-import $ from "jsr:@david/dax@0.42.0";
-import { exists } from "jsr:@std/fs";
-import * as path from "jsr:@std/path/join";
-import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
+import $ from "@david/dax";
+import { exists } from "@std/fs/exists";
+import * as path from "@std/path/join";
+import { z } from "zod";
 
 import { die } from "./_utils.ts";
 
