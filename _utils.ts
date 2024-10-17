@@ -1,4 +1,4 @@
-import $ from "jsr:@david/dax@0.42.0";
+import $ from "@david/dax";
 
 export function die(
   code: number,
