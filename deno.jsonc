@@ -1,0 +1,9 @@
+{
+  "tasks": {
+    "compile": "deno compile --allow-env --allow-read --allow-write --allow-run mod.ts"
+  },
+  "lock": {
+    "frozen": false
+  },
+  "imports": { "@david/dax": "jsr:@david/dax@^0.42.0" }
+}
