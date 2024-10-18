@@ -4,7 +4,6 @@ import $ from "@david/dax";
 import { exists } from "@std/fs/exists";
 import * as path from "@std/path/join";
 import { parseArgs } from "@std/cli";
-import { parse as parseYaml } from "@std/yaml/parse";
 
 import * as Config from "./config.ts";
 import {
@@ -18,6 +17,7 @@ import {
   warn,
 } from "./_utils.ts";
 import * as Git from "./git.ts";
+import { readConfig } from "./config.ts";
 
 const BARE_REPO_DIRNAME = Deno.env.get("GIT_WP_BARE_REPO_NAME") || "bare.git";
 const WORKTREES_DIRNAME = Deno.env.get("GIT_WP_WORKTREES_DIR") || ".";
@@ -339,23 +339,6 @@ async function copyConfig(
   await progress(async () => {
     await Deno.copyFile(origConfigPath, configPath);
   });
-}
-
-async function readConfig(worktree?: string): Promise<Config.Config> {
-  const configPath = worktree
-    ? path.join(worktree, Config.CONFIG_FILENAME)
-    : path.join(Deno.cwd(), Config.CONFIG_FILENAME);
-
-  const fileContent = await exists(configPath, { isFile: true }) &&
-    await Deno.readTextFile(configPath);
-
-  if (!fileContent) {
-    die(1, `Config file not found at ${configPath}`);
-  }
-
-  const parsed = parseYaml(fileContent);
-
-  return Config.ConfigSchema.parse(parsed);
 }
 
 if (import.meta.main) {
