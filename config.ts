@@ -2,8 +2,6 @@ import { z } from "zod";
 import { exists } from "@std/fs/exists";
 import { parse as parseYaml } from "@std/yaml/parse";
 
-import { die } from "./_utils.ts";
-
 export const CONFIG_FILENAME = "dz.config.yml";
 
 function unmargin(str: string): string {
@@ -95,12 +93,13 @@ export const DEFAULT_CONFIG = unmargin(`
           wezterm cli set-tab-title "\${DZ_PROJECT}:\${DZ_BRANCH}"
 `);
 
-export async function readConfig(configPath: string): Promise<Config> {
-  const fileContent = await exists(configPath, { isFile: true }) &&
+export async function readConfig(configPath?: string): Promise<Config> {
+  const fileContent = configPath &&
+    await exists(configPath, { isFile: true }) &&
     await Deno.readTextFile(configPath);
 
   if (!fileContent) {
-    die(1, `Config file not found at ${configPath}`);
+    return {};
   }
 
   const parsed = parseYaml(fileContent);
