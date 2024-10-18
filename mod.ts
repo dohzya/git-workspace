@@ -38,7 +38,10 @@ async function initWorkspace(projectName: string) {
     // no checks needed
   } else if (await exists(BARE_REPO_DIRNAME, { isDirectory: true })) {
     die(1, `Directory ${BARE_REPO_DIRNAME} already exists`);
-  } else if (await exists(WORKTREES_DIRNAME, { isDirectory: true })) {
+  } else if (
+    WORKTREES_DIRNAME !== "." &&
+    await exists(WORKTREES_DIRNAME, { isDirectory: true })
+  ) {
     die(1, `Directory ${WORKTREES_DIRNAME} already exists`);
   }
 
