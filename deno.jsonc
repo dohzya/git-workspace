@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "compile": "deno compile --allow-env --allow-read --allow-write --allow-run mod.ts"
+    "compile": "deno compile --allow-env --allow-read --allow-write --allow-run -o git-workspace mod.ts"
   },
   "lock": {
     "frozen": false
