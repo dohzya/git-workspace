@@ -5,8 +5,6 @@ import { exists } from "@std/fs/exists";
 import * as path from "@std/path/join";
 import { z } from "zod";
 
-import { die } from "./_utils.ts";
-
 export async function retrieveBareRepoPath(): Promise<string> {
   return await $`git rev-parse --path-format=absolute --git-common-dir`.text();
 }
@@ -156,19 +154,3 @@ export function findExistingWorktreeByBranch(
 //   );
 //   return worktreeItem?.worktree;
 // }
-
-export function worktreeExists(
-  worktree: string,
-  worktreeItems: WorktreeListItem[],
-): boolean {
-  return worktreeItems.some((item) => item.worktree === worktree);
-}
-
-export function checkWorktreeExists(
-  worktree: string,
-  worktreeItems: WorktreeListItem[],
-): void {
-  if (!worktreeExists(worktree, worktreeItems)) {
-    die(1, `Worktree ${worktree} not found`);
-  }
-}
