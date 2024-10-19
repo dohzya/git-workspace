@@ -187,7 +187,10 @@ async function deleteWorktree(
   mainWorktree: string | undefined,
   options?: DeleteWorkspaceOptions,
 ) {
-  Git.checkWorktreeExists(worktree, await Git.listWorktrees());
+  const worktrees = await Git.listWorktrees();
+  if (!worktrees.some((item) => item.worktree === worktree)) {
+    die(1, `Worktree ${worktree} not found`);
+  }
 
   const branch = options?.deleteBranch || options?.forceDeleteBranch
     ? await Git.retrieveCurrentBranch(worktree)
