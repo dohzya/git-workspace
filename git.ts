@@ -41,8 +41,10 @@ export async function retrieveCurrentWorktree(): Promise<string> {
   return await $`git rev-parse --show-toplevel`.text();
 }
 
-export async function retrieveProjectName(): Promise<string> {
-  return await $`git config workspace.project-name`.text();
+export async function retrieveProjectName(): Promise<string | undefined> {
+  const name = (await $`git config workspace.project-name || true`.text())
+    .trim();
+  return name.length ? name : undefined;
 }
 
 type WorktreeListItem =
