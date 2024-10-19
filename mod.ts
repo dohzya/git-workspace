@@ -1,11 +1,10 @@
 #!/usr/bin/env -S deno run --allow-env --allow-read --allow-write --allow-run
 
 import $ from "@david/dax";
+import { parseArgs } from "@std/cli";
 import { exists } from "@std/fs/exists";
 import * as path from "@std/path/join";
-import { parseArgs } from "@std/cli";
 
-import * as Config from "./config.ts";
 import {
   die,
   displayInfo,
@@ -16,8 +15,9 @@ import {
   progressIfConf,
   warn,
 } from "./_utils.ts";
-import * as Git from "./git.ts";
+import * as Config from "./config.ts";
 import { readConfig } from "./config.ts";
+import * as Git from "./git.ts";
 
 const BARE_REPO_DIRNAME = Deno.env.get("GIT_WP_BARE_REPO_NAME") || "bare.git";
 const WORKTREES_DIRNAME = Deno.env.get("GIT_WP_WORKTREES_DIR") || ".";
@@ -373,7 +373,7 @@ if (import.meta.main) {
       const targetWorktree = worktree ?? mainWorktree;
 
       const currentWorktree = await Git.retrieveMainWorktree();
-      const config = await readConfig(worktree ?? currentWorktree);
+      const config = await readConfig({ dir: worktree ?? currentWorktree });
 
       const WorktreeActions = Object.keys(config);
       const isWorktreeAction = (action: string | number): action is string => {

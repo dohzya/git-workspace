@@ -1,6 +1,7 @@
-import { z } from "zod";
 import { exists } from "@std/fs/exists";
+import * as path from "@std/path/join";
 import { parse as parseYaml } from "@std/yaml/parse";
+import { z } from "zod";
 
 export const CONFIG_FILENAME = "dz.config.yml";
 
@@ -93,16 +94,26 @@ export const DEFAULT_CONFIG = unmargin(`
           wezterm cli set-tab-title "\${DZ_PROJECT}:\${DZ_BRANCH}"
 `);
 
-export async function readConfig(configPath?: string): Promise<Config> {
-  const fileContent = configPath &&
-    await exists(configPath, { isFile: true }) &&
-    await Deno.readTextFile(configPath);
+type ReadConfigOptions =
+  | { content: string | undefined; path?: undefined; dir?: undefined }
+  | { content?: undefined; path: string | undefined; dir?: undefined }
+  | { content?: undefined; path?: undefined; dir: string | undefined };
+export async function readConfig(options: ReadConfigOptions): Promise<Config> {
+  const configPath = options.path ??
+    (options.dir && path.join(options.dir, CONFIG_FILENAME));
+  console.log(configPath);
 
-  if (!fileContent) {
+  const configStr = options.content ?? (
+    configPath &&
+    await exists(configPath, { isFile: true }) &&
+    await Deno.readTextFile(configPath)
+  );
+
+  if (!configStr) {
     return {};
   }
 
-  const parsed = parseYaml(fileContent);
+  const parsed = parseYaml(configStr);
 
   return ConfigSchema.parse(parsed);
 }
