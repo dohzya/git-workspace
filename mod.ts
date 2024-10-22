@@ -375,9 +375,8 @@ if (import.meta.main) {
         die(1, "No main worktree found");
       }
 
-      const targetWorktree = worktree ?? mainWorktree;
-
-      const currentWorktree = await Git.retrieveMainWorktree();
+      const currentWorktree = await Git.retrieveCurrentWorktree();
+      const targetWorktree = worktree ?? currentWorktree;
       const config = await readConfig({ dir: worktree ?? currentWorktree });
 
       const WorktreeActions = Object.keys(config);
