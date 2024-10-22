@@ -348,10 +348,14 @@ async function copyConfig(
   }
   const origConfigPath = path.join(from, Config.CONFIG_FILENAME);
 
-  info(`Copying config`, `from ${from}...`);
-  await progress(async () => {
-    await Deno.copyFile(origConfigPath, configPath);
-  });
+  if (await exists(origConfigPath)) {
+    info(`Copying config`, `from ${from}...`);
+    await progress(async () => {
+      await Deno.copyFile(origConfigPath, configPath);
+    });
+  } else {
+    note(`No config found at ${from}`);
+  }
 }
 
 if (import.meta.main) {
