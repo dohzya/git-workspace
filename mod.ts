@@ -186,12 +186,17 @@ interface DeleteWorkspaceOptions {
   readonly force?: boolean;
   readonly deleteBranch?: boolean;
   readonly forceDeleteBranch?: boolean;
+  readonly forceDeleteMain?: boolean;
 }
 async function deleteWorktree(
   worktree: string,
   mainWorktree: string | undefined,
   options?: DeleteWorkspaceOptions,
 ) {
+  if (worktree === mainWorktree && !options?.forceDeleteMain) {
+    die(1, "Cannot delete the main worktree");
+  }
+
   const worktrees = await Git.listWorktrees();
   if (!worktrees.some((item) => item.worktree === worktree)) {
     die(1, `Worktree ${worktree} not found`);
@@ -407,13 +412,25 @@ if (import.meta.main) {
           force,
           ["delete-branch"]: deleteBranch,
           ["force-delete-branch"]: forceDeleteBranch,
+          ["force-delete-main"]: forceDeleteMain,
         } = parseArgs(args, {
-          boolean: ["force", "delete-branch", "force-delete-branch"],
-          negatable: ["force", "delete-branch", "force-delete-branch"],
+          boolean: [
+            "force",
+            "delete-branch",
+            "force-delete-branch",
+            "force-delete-main",
+          ],
+          negatable: [
+            "force",
+            "delete-branch",
+            "force-delete-branch",
+            "force-delete-main",
+          ],
           alias: {
             f: "force",
             d: "delete-branch",
             D: "force-delete-branch",
+            M: "force-delete-main",
           },
         });
 
@@ -424,7 +441,7 @@ if (import.meta.main) {
         await deleteWorktree(
           targetWorktree,
           mainWorktree,
-          { force, deleteBranch, forceDeleteBranch },
+          { force, deleteBranch, forceDeleteBranch, forceDeleteMain },
         );
 
         if (worktree === undefined) {
