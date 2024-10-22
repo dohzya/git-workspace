@@ -32,10 +32,15 @@ async function initWorkspace(projectName: string) {
     );
   }
 
-  const isEmpty = (await $`ls`.text()).trim().length === 0;
+  const isEmpty = (await $`\ls -a`.text()).trim().length === 0;
 
   if (isEmpty) {
     // no checks needed
+  } else if (await exists(".git")) {
+    die(
+      1,
+      `Directory is already a git repository. To convert it in a workspace, use convert)`,
+    );
   } else if (await exists(BARE_REPO_DIRNAME, { isDirectory: true })) {
     die(1, `Directory ${BARE_REPO_DIRNAME} already exists`);
   } else if (
