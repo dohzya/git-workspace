@@ -14,12 +14,18 @@ export async function retrieveMainBranch(): Promise<string> {
     await $`git config init.defaultBranch`.text() ?? "main";
 }
 
-export async function retrieveMainWorktree(): Promise<string | undefined> {
-  const mainBranch = await retrieveMainBranch();
+export async function retrieveWorktree(
+  branch: string,
+): Promise<string | undefined> {
   return findExistingWorktreeByBranch(
-    mainBranch,
+    branch,
     await listWorktrees(),
   );
+}
+
+export async function retrieveMainWorktree(): Promise<string | undefined> {
+  const mainBranch = await retrieveMainBranch();
+  return await retrieveWorktree(mainBranch);
 }
 
 export async function retrieveCurrentBranch(

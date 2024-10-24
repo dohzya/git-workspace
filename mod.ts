@@ -113,10 +113,7 @@ async function createWorktree(
   { nocheck = false }: CreateWorktreeOptions = {},
 ): Promise<string> {
   if (!nocheck) {
-    const worktree = Git.findExistingWorktreeByBranch(
-      branch,
-      await Git.listWorktrees(),
-    );
+    const worktree = await Git.retrieveWorktree(branch);
     if (worktree !== undefined) {
       die(1, `Worktree for ${branch} already exists`);
     }
@@ -342,29 +339,29 @@ async function initConfig(workspace: string): Promise<void> {
 }
 
 interface CopyConfigOptions {
-  readonly from: string;
   readonly force?: boolean;
 }
 async function copyConfig(
-  workspace: string,
-  { from, force = false }: CopyConfigOptions,
+  fromWorktree: string,
+  toWorktree: string,
+  { force = false }: CopyConfigOptions = {},
 ) {
-  const configPath = path.join(workspace, Config.CONFIG_FILENAME);
-  if (!force && await exists(configPath)) {
+  const targetConfigPath = path.join(toWorktree, Config.CONFIG_FILENAME);
+  if (!force && await exists(targetConfigPath)) {
     die(
       1,
-      `Config file already exists at ${configPath}`,
+      `Config file already exists at ${targetConfigPath}`,
     );
   }
-  const origConfigPath = path.join(from, Config.CONFIG_FILENAME);
+  const origConfigPath = path.join(fromWorktree, Config.CONFIG_FILENAME);
 
   if (await exists(origConfigPath)) {
-    info(`Copying config`, `from ${from}...`);
+    info(`Copying config`, `from ${fromWorktree}...`);
     await progress(async () => {
-      await Deno.copyFile(origConfigPath, configPath);
+      await Deno.copyFile(origConfigPath, targetConfigPath);
     });
   } else {
-    note(`No config found at ${from}`);
+    note(`No config found at ${fromWorktree}`);
   }
 }
 
@@ -464,22 +461,37 @@ if (import.meta.main) {
       } else if (cmd === "config:init") {
         await initConfig(targetWorktree);
       } else if (cmd === "config:copy") {
-        const { _: [from], force } = parseArgs(args, {
+        const { from, to, force } = parseArgs(args, {
+          string: ["from", "to"],
           boolean: ["force"],
           negatable: ["force"],
           alias: {
             f: "force",
           },
         });
-        const fromWorktree = from ? from.toString() : mainWorktree;
-        if (fromWorktree === undefined) {
-          die(1, "Missing source worktree");
+        let fromWorktree: string, toWorktree: string;
+        if (from && to) {
+          fromWorktree = await Git.retrieveWorktree(from.toString()) ??
+            die(1, "Could not find the worktree to copy from");
+          toWorktree = await Git.retrieveWorktree(to.toString()) ??
+            die(1, "Could not find the worktree to copy to");
+        } else if (from) {
+          fromWorktree = await Git.retrieveWorktree(from.toString()) ??
+            die(1, "Could not find the worktree to copy from");
+          toWorktree = targetWorktree;
+        } else if (to) {
+          fromWorktree = targetWorktree;
+          toWorktree = await Git.retrieveWorktree(to.toString()) ??
+            die(1, "Could not find the worktree to copy to");
+        } else {
+          fromWorktree = mainWorktree;
+          toWorktree = targetWorktree;
         }
-        if (fromWorktree === targetWorktree) {
-          die(1, "Cannot copy config from current worktree");
+        if (fromWorktree === toWorktree) {
+          die(1, "Cannot copy config file to itself");
         }
 
-        await copyConfig(targetWorktree, { from: fromWorktree, force });
+        await copyConfig(fromWorktree, toWorktree, { force });
       } else if (cmd === "action") {
         const { _: [action, ...rest] } = parseArgs(args, { stopEarly: true });
         await worktreeAction({
