@@ -269,10 +269,10 @@ async function worktreeAction(options: WorktreeActionOptions) {
     config,
     nested = false,
     env = {
-      DZ_WORKTREE: worktree,
-      DZ_BRANCH: await Git.retrieveCurrentBranch(worktree),
-      DZ_ACTION: actionName,
-      DZ_PROJECT: await Git.retrieveProjectName(),
+      GIT_WP_WORKTREE: worktree,
+      GIT_WP_BRANCH: await Git.retrieveCurrentBranch(worktree),
+      GIT_WP_ACTION: actionName,
+      GIT_WP_PROJECT: await Git.retrieveProjectName(),
     },
   } = options;
   if (!nested && worktree !== undefined) Deno.chdir(worktree);
@@ -303,7 +303,8 @@ async function worktreeAction(options: WorktreeActionOptions) {
             env,
           });
         } else if (task.type === "bash") {
-          const cmd = $`bash`.env({ ...env, DZ_ACTION: actionName }).stdinText(`
+          const cmd = $`bash`.env({ ...env, GIT_WP_ACTION: actionName })
+            .stdinText(`
             function action() {
               ${task.script}
             }

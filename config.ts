@@ -69,29 +69,23 @@ export const ConfigSchema: z.ZodType<Config, z.ZodTypeDef, unknown> = z
   .record(ActionSchema);
 
 export const DEFAULT_CONFIG = unmargin(`
-  action1:
-    tasks:
-      - action: action2
-      - type: action
-        args: --foo
-        action: action3
-
-  action2:
-    tasks:
-      - bash: |
-          echo "This is action 2, called with $*"
-
-  action3:
-    tasks:
-      - type: bash
-        stop_on_error: false
-        script: |
-          echo "This is action 3"
-
   "tab:title":
     tasks:
       - bash: |
-          wezterm cli set-tab-title "\${DZ_PROJECT}:\${DZ_BRANCH}"
+          wezterm cli set-tab-title "\${GIT_WP_PROJECT}:\${GIT_WP_BRANCH}"
+  "vscode:wp:create":
+    tasks:
+      - bash: |
+          filename="$(echo "\${GIT_WP_PROJECT}⸬\${GIT_WP_BRANCH}" | sed 's#/#⧸#g').code-workspace"
+          if [[ ! -f "$filename" ]]; then
+            echo '{"folders":[{"path": "."}],"settings":{}}' > "$filename"
+          fi
+  "vscode:wp:open":
+    tasks:
+      - action: vscode:wp:create
+      - bash: |
+          filename="$(echo "\${GIT_WP_PROJECT}⸬\${GIT_WP_BRANCH}" | sed 's#/#⧸#g').code-workspace"
+          open "$filename"
 `);
 
 type ReadConfigOptions =
