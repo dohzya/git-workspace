@@ -19,16 +19,26 @@ import * as Config from "./config.ts";
 import { readConfig } from "./config.ts";
 import * as Git from "./git.ts";
 
-const BARE_REPO_DIRNAME = Deno.env.get("GIT_WP_BARE_REPO_NAME") || "bare.git";
-const WORKTREES_DIRNAME = Deno.env.get("GIT_WP_WORKTREES_DIR") || ".";
+interface InitWorkspaceOptions {
+  readonly mainBranch?: string;
+  readonly bareRepoDirname?: string;
+  readonly worktreesDir?: string;
+}
+async function initWorkspace(
+  projectName: string,
+  options: InitWorkspaceOptions = {},
+) {
+  const mainBranch = options.mainBranch ?? await Git.retrieveMainBranch();
+  const worktreeDirname =
+    (options.worktreesDir ?? Deno.env.get("GIT_WP_BARE_REPO_NAME")) ||
+    "bare.git";
+  const bareRepoDirname =
+    (options.bareRepoDirname ?? Deno.env.get("GIT_WP_WORKTREES_DIR")) || ".";
 
-async function initWorkspace(projectName: string) {
-  const mainBranch = await Git.retrieveMainBranch();
-
-  if (WORKTREES_DIRNAME === BARE_REPO_DIRNAME) {
+  if (worktreeDirname === bareRepoDirname) {
     die(
       1,
-      `Worktrees directory cannot be the same as the bare repo (${BARE_REPO_DIRNAME})`,
+      `Worktrees directory cannot be the same as the bare repo (${bareRepoDirname})`,
     );
   }
 
@@ -41,35 +51,35 @@ async function initWorkspace(projectName: string) {
       1,
       `Directory is already a git repository. To convert it in a workspace, use convert)`,
     );
-  } else if (await exists(BARE_REPO_DIRNAME, { isDirectory: true })) {
-    die(1, `Directory ${BARE_REPO_DIRNAME} already exists`);
+  } else if (await exists(bareRepoDirname, { isDirectory: true })) {
+    die(1, `Directory ${bareRepoDirname} already exists`);
   } else if (
-    WORKTREES_DIRNAME !== "." &&
-    await exists(WORKTREES_DIRNAME, { isDirectory: true })
+    worktreeDirname !== "." &&
+    await exists(worktreeDirname, { isDirectory: true })
   ) {
-    die(1, `Directory ${WORKTREES_DIRNAME} already exists`);
+    die(1, `Directory ${worktreeDirname} already exists`);
   }
 
   info(`Creating base directies...`);
   await progress(async () => {
-    await Deno.mkdir(BARE_REPO_DIRNAME, { recursive: true });
-    await Deno.mkdir(WORKTREES_DIRNAME, { recursive: true });
+    await Deno.mkdir(bareRepoDirname, { recursive: true });
+    await Deno.mkdir(worktreeDirname, { recursive: true });
   });
 
-  const mainPath = path.join(Deno.cwd(), WORKTREES_DIRNAME, mainBranch);
+  const mainPath = path.join(Deno.cwd(), worktreeDirname, mainBranch);
 
   info(`Initializing workspace...`);
   await progress(async () => {
-    await $`git init --bare`.cwd(BARE_REPO_DIRNAME);
+    await $`git init --bare`.cwd(bareRepoDirname);
 
     await $`git config workspace.project-name ${projectName}`
-      .cwd(BARE_REPO_DIRNAME);
+      .cwd(bareRepoDirname);
   });
 
   info(`Creating worktree for main branch...`);
   await progress(async () => {
     await $`git worktree add --orphan -b ${mainBranch} ${mainPath}`.cwd(
-      BARE_REPO_DIRNAME,
+      bareRepoDirname,
     );
   });
 
@@ -84,7 +94,7 @@ async function initWorkspace(projectName: string) {
     info(`Moving existing files into main worktree...`);
     await progress(async () => {
       for await (const file of Deno.readDir(Deno.cwd())) {
-        if ([BARE_REPO_DIRNAME, WORKTREES_DIRNAME].includes(file.name)) {
+        if ([bareRepoDirname, worktreeDirname].includes(file.name)) {
           continue;
         }
 
