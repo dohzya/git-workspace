@@ -106,11 +106,12 @@ async function initWorkspace(
 
 interface CreateWorktreeOptions {
   readonly nocheck?: boolean;
+  readonly mainWorktree: string;
 }
 async function createWorktree(
   currentWorktree: string,
   branch: string,
-  { nocheck = false }: CreateWorktreeOptions = {},
+  { nocheck = false, mainWorktree }: CreateWorktreeOptions,
 ): Promise<string> {
   if (!nocheck) {
     const worktree = await Git.retrieveWorktree(branch);
@@ -120,16 +121,8 @@ async function createWorktree(
   }
 
   const mainBranch = await Git.retrieveMainBranch();
-  const mainWorktree = Git.findExistingWorktreeByBranch(
-    mainBranch,
-    await Git.listWorktrees(),
-  );
-
-  if (mainWorktree === undefined) {
-    die(1, `Main branch ${mainBranch} not found`);
-  }
-
   const worktree = mainWorktree.replace(mainBranch, branch);
+
   info(`Creating worktree for ${branch}...`);
   await progress(async () => {
     if ((await $`git branch --list ${branch}`.text()).trim().length === 0) {
@@ -174,7 +167,14 @@ async function closeTab(): Promise<string> {
   }
 }
 
-async function openWorktree(currentWorktree: string, branch: string) {
+interface OpenWorktreeOptions {
+  mainWorktree: string;
+}
+async function openWorktree(
+  currentWorktree: string,
+  branch: string,
+  options: OpenWorktreeOptions,
+) {
   const worktree = Git.findExistingWorktreeByBranch(
     branch,
     await Git.listWorktrees(),
@@ -182,6 +182,7 @@ async function openWorktree(currentWorktree: string, branch: string) {
   if (worktree === undefined) {
     const createdWorktree = await createWorktree(currentWorktree, branch, {
       nocheck: true,
+      mainWorktree: options.mainWorktree,
     });
     await openTab(createdWorktree, branch);
   } else {
@@ -415,10 +416,10 @@ if (import.meta.main) {
 
       if (cmd === "add") {
         const branch = Deno.args.at(1) ?? die(1, "Missing branch name");
-        await createWorktree(targetWorktree, branch);
+        await createWorktree(targetWorktree, branch, { mainWorktree });
       } else if (cmd === "open") {
         const branch = Deno.args.at(1) ?? die(1, "Missing branch name");
-        await openWorktree(targetWorktree, branch);
+        await openWorktree(targetWorktree, branch, { mainWorktree });
       } else if (cmd === "delete") {
         const {
           force,
