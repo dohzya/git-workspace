@@ -79,7 +79,9 @@ export const DEFAULT_CONFIG = unmargin(`
   "tab:title":
     tasks:
       - bash: |
-          wezterm cli set-tab-title "\${GIT_WP_PROJECT}:\${GIT_WP_BRANCH}"
+          args="$GIT_WP_PROJECT:$GIT_WP_BRANCH"
+          for arg in "$@"; do args="\${args}:\${arg}"; done
+          wezterm cli set-tab-title "$(echo "$args" | sed -e 's/^://' -e 's/::*/:/g')"
   "vscode:wp:create":
     tasks:
       - bash: |
