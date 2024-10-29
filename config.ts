@@ -43,7 +43,14 @@ export const TaskSchema: z.ZodType<Task, z.ZodTypeDef, unknown> = z.union([
   }),
   z.object({
     action: z.string().min(1),
-  }).transform(({ action }) => ({ type: "action" as const, action })),
+    args: z.optional(z.array(z.string())),
+    stop_on_error: z.optional(z.boolean()),
+  }).transform(({ action, args, stop_on_error }) => ({
+    type: "action" as const,
+    action,
+    args,
+    stop_on_error,
+  })),
   z.object({
     type: z.literal("bash"),
     script: z.string().min(1),
