@@ -344,6 +344,7 @@ async function worktreeAction(options: WorktreeActionOptions) {
           const cmd = $`bash`.env({ ...env, GIT_WP_ACTION: actionName })
             .stdinText(`
             function action() {
+              set -e
               ${task.script}
             }
             action ${args.map($.escapeArg).join(" ")}
