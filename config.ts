@@ -104,7 +104,6 @@ type ReadConfigOptions =
 export async function readConfig(options: ReadConfigOptions): Promise<Config> {
   const configPath = options.path ??
     (options.dir && path.join(options.dir, CONFIG_FILENAME));
-  console.log(configPath);
 
   const configStr = options.content ?? (
     configPath &&
