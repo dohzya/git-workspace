@@ -181,10 +181,27 @@ async function openWorktree(
   let worktree: string | undefined;
   if (branch === undefined) {
     const allWorktrees = await Git.listWorktrees();
-    const worktrees = allWorktrees.filter((wt) => !wt.bare);
+    const worktrees = new Array<Git.WorktreeListItem & { title: string }>();
+    for (const wt of allWorktrees) {
+      if (wt.bare) continue;
+      if (wt.detached) {
+        const branch = await Git.retrieveCurrentBranch(wt.worktree);
+        worktrees.push({
+          ...wt,
+          title: `(${branch.replace(/^refs\/heads\//, "")}) (${wt.worktree})`,
+        });
+      } else {
+        worktrees.push({
+          ...wt,
+          title: `${wt.branch.replace(/^refs\/heads\//, "")} (${wt.worktree})`,
+          branch: wt.branch,
+          worktree: wt.worktree,
+        });
+      }
+    }
     const selectedIdx = await $.select({
       message: `Choose a worktree to open`,
-      options: worktrees.map((wt) => wt.worktree),
+      options: worktrees.map((o) => o.title),
     });
     const selected = worktrees[selectedIdx];
     const worktree = selected.worktree;

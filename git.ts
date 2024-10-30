@@ -35,10 +35,10 @@ export async function retrieveCurrentBranch(
   const gitDir = await (worktree === undefined ? cmd : cmd.cwd(worktree))
     .text();
   const rebaseHead = path.join(gitDir, "rebase-merge", "head-name");
-  if (await exists(rebaseHead)) {
-    return await Deno.readTextFile(rebaseHead);
-  }
-  return await $`git branch --show-current`.cwd(gitDir).text();
+  const branch = (await exists(rebaseHead))
+    ? await Deno.readTextFile(rebaseHead)
+    : await $`git branch --show-current`.cwd(gitDir).text();
+  return branch.trim();
 }
 
 export async function retrieveCurrentWorktree(): Promise<string> {
@@ -51,7 +51,7 @@ export async function retrieveProjectName(): Promise<string | undefined> {
   return name.length ? name : undefined;
 }
 
-type WorktreeListItem =
+export type WorktreeListItem =
   & {
     readonly worktree: string;
   }
