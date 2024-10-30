@@ -547,7 +547,8 @@ if (import.meta.main) {
         });
       } else {
         const msg = cmd ? `Unknown command: "${cmd}"` : "Missing command";
-        die(1, `${msg}\n\nusage: git workspace ${Commands.join("|")}`);
+        const commands = [...Commands, WorktreeActions];
+        die(1, `${msg}\n\nusage: git workspace ${commands.join("|")}`);
       }
     }
   } catch (err) {
