@@ -202,6 +202,7 @@ async function openWorktree(
     const selectedIdx = await $.select({
       message: `Choose a worktree to open`,
       options: worktrees.map((o) => o.title),
+      initialIndex: worktrees.findIndex((o) => o.worktree === currentWorktree),
     });
     const selected = worktrees[selectedIdx];
     const worktree = selected.worktree;
