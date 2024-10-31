@@ -484,8 +484,8 @@ if (import.meta.main) {
           ],
           alias: {
             f: "force",
-            d: "delete-branch",
-            D: "force-delete-branch",
+            b: "delete-branch",
+            B: "force-delete-branch",
             M: "force-delete-main",
           },
         });
