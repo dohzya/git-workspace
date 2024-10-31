@@ -28,11 +28,13 @@ export type Task = {
   type: "bash";
   script: string;
   stop_on_error?: boolean;
+  silent?: boolean;
 } | {
   type: "action";
   action: string;
-  stop_on_error?: boolean;
   args?: string[];
+  stop_on_error?: boolean;
+  silent?: boolean;
 };
 export const TaskSchema: z.ZodType<Task, z.ZodTypeDef, unknown> = z.union([
   z.object({
@@ -40,34 +42,47 @@ export const TaskSchema: z.ZodType<Task, z.ZodTypeDef, unknown> = z.union([
     action: z.string().min(1),
     args: z.optional(z.array(z.string())),
     stop_on_error: z.optional(z.boolean()),
-  }),
+    silent: z.optional(z.boolean()),
+  }) satisfies z.ZodType<Task, z.ZodTypeDef, unknown>,
   z.object({
     action: z.string().min(1),
     args: z.optional(z.array(z.string())),
     stop_on_error: z.optional(z.boolean()),
-  }).transform(({ action, args, stop_on_error }) => ({
+    silent: z.optional(z.boolean()),
+  }).transform(({ action, args, stop_on_error, silent }) => ({
     type: "action" as const,
     action,
     args,
     stop_on_error,
-  })),
+    silent,
+  })) satisfies z.ZodType<Task, z.ZodTypeDef, unknown>,
   z.object({
     type: z.literal("bash"),
     script: z.string().min(1),
     stop_on_error: z.optional(z.boolean()),
-  }),
+    silent: z.optional(z.boolean()),
+  }) satisfies z.ZodType<Task, z.ZodTypeDef, unknown>,
   z.object({
     bash: z.string().min(1),
-  }).transform(({ bash }) => ({ type: "bash" as const, script: bash })),
+    stop_on_error: z.optional(z.boolean()),
+    silent: z.optional(z.boolean()),
+  }).transform(({ bash, stop_on_error, silent }) => ({
+    type: "bash" as const,
+    script: bash,
+    stop_on_error,
+    silent,
+  })) satisfies z.ZodType<Task, z.ZodTypeDef, unknown>,
 ]);
 
 export type Action = {
   checks?: Record<string, Check>;
+  silent?: boolean;
   tasks: Task[];
 };
 export const ActionSchema: z.ZodType<Action, z.ZodTypeDef, unknown> = z
   .object({
     checks: z.optional(z.record(CheckSchema)),
+    silent: z.optional(z.boolean()),
     tasks: z.array(TaskSchema),
   });
 
@@ -77,6 +92,7 @@ export const ConfigSchema: z.ZodType<Config, z.ZodTypeDef, unknown> = z
 
 export const DEFAULT_CONFIG = unmargin(`
   "tab:title":
+    silent: true
     tasks:
       - bash: |
           args="$GIT_WP_PROJECT:$GIT_WP_BRANCH"
@@ -90,6 +106,7 @@ export const DEFAULT_CONFIG = unmargin(`
             echo '{"folders":[{"path": "."}],"settings":{}}' > "$filename"
           fi
   "vscode:wp:open":
+    silent: true
     tasks:
       - action: vscode:wp:create
       - bash: |

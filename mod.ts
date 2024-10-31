@@ -298,6 +298,7 @@ interface WorktreeActionOptions {
   config: Config.Config;
   nested?: boolean;
   env?: Record<string, string | undefined>;
+  silent?: boolean;
 }
 async function worktreeAction(options: WorktreeActionOptions) {
   const {
@@ -312,6 +313,7 @@ async function worktreeAction(options: WorktreeActionOptions) {
       GIT_WP_ACTION: actionName,
       GIT_WP_PROJECT: await Git.retrieveProjectName(),
     },
+    silent,
   } = options;
   if (!nested && worktree !== undefined) Deno.chdir(worktree);
 
@@ -323,11 +325,13 @@ async function worktreeAction(options: WorktreeActionOptions) {
     );
   }
 
-  if (nested) {
-    emptyLog();
-    note(`Performing action "${actionName}"`);
-  } else {
-    info(`Performing action "${actionName}"`, `on worktree ${worktree}...`);
+  if (silent ?? action.silent) {
+    if (nested) {
+      emptyLog();
+      note(`Performing action "${actionName}"`);
+    } else {
+      info(`Performing action "${actionName}"`, `on worktree ${worktree}...`);
+    }
   }
   await progressIfConf(!nested, async () => {
     for (const [idx, task] of action.tasks.entries()) {
@@ -339,6 +343,7 @@ async function worktreeAction(options: WorktreeActionOptions) {
             args: task.args ?? args,
             nested: true,
             env,
+            silent: task.silent,
           });
         } else if (task.type === "bash") {
           const cmd = $`bash`.env({ ...env, GIT_WP_ACTION: actionName })
