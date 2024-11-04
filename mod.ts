@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --allow-env --allow-read --allow-write --allow-run
 
-import $ from "@david/dax";
+import $, { CommandChild } from "@david/dax";
 import { parseArgs } from "@std/cli";
 import { exists } from "@std/fs/exists";
 import * as path from "@std/path/join";
@@ -345,15 +345,24 @@ async function worktreeAction(options: WorktreeActionOptions) {
             env,
             silent: task.silent,
           });
-        } else if (task.type === "bash") {
-          const cmd = $`bash`.env({ ...env, GIT_WP_ACTION: actionName })
-            .stdinText(`
+        } else if (task.type === "shell") {
+          let cmd: CommandChild;
+          if (task.shell === "bash") {
+            cmd = $`bash`.env({ ...env, GIT_WP_ACTION: actionName })
+              .stdinText(`
             function action() {
               set -e
               ${task.script}
             }
             action ${args.map($.escapeArg).join(" ")}
           `).spawn();
+          } else {
+            cmd = $`nu -c ${task.script}`.env({
+              ...env,
+              GIT_WP_ACTION: actionName,
+            })
+              .spawn();
+          }
           const killCmd = () => cmd.kill("SIGINT");
           Deno.addSignalListener("SIGINT", killCmd);
           await cmd;

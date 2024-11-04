@@ -25,7 +25,8 @@ export const CheckSchema: z.ZodType<Check, z.ZodTypeDef, unknown> = z.enum(
 );
 
 export type Task = {
-  type: "bash";
+  type: "shell";
+  shell: "bash" | "nushell";
   script: string;
   stop_on_error?: boolean;
   silent?: boolean;
@@ -57,7 +58,8 @@ export const TaskSchema: z.ZodType<Task, z.ZodTypeDef, unknown> = z.union([
     silent,
   })) satisfies z.ZodType<Task, z.ZodTypeDef, unknown>,
   z.object({
-    type: z.literal("bash"),
+    type: z.literal("shell"),
+    shell: z.enum(["bash", "nushell"]),
     script: z.string().min(1),
     stop_on_error: z.optional(z.boolean()),
     silent: z.optional(z.boolean()),
@@ -67,8 +69,20 @@ export const TaskSchema: z.ZodType<Task, z.ZodTypeDef, unknown> = z.union([
     stop_on_error: z.optional(z.boolean()),
     silent: z.optional(z.boolean()),
   }).transform(({ bash, stop_on_error, silent }) => ({
-    type: "bash" as const,
+    type: "shell" as const,
+    shell: "bash",
     script: bash,
+    stop_on_error,
+    silent,
+  })) satisfies z.ZodType<Task, z.ZodTypeDef, unknown>,
+  z.object({
+    nushell: z.string().min(1),
+    stop_on_error: z.optional(z.boolean()),
+    silent: z.optional(z.boolean()),
+  }).transform(({ nushell, stop_on_error, silent }) => ({
+    type: "shell" as const,
+    shell: "nushell",
+    script: nushell,
     stop_on_error,
     silent,
   })) satisfies z.ZodType<Task, z.ZodTypeDef, unknown>,
