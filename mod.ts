@@ -466,7 +466,7 @@ if (import.meta.main) {
         ...WorktreeActions,
       ];
 
-      if (cmd === "add") {
+      if (cmd === "create") {
         const branch = Deno.args.at(1) ?? die(1, "Missing branch name");
         await createWorktree(targetWorktree, branch, { mainWorktree });
       } else if (cmd === "open") {
