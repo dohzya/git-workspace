@@ -1,0 +1,25 @@
+install:
+  tasks:
+    - bash: |
+        deno lint
+        deno run compile
+
+"tab:title":
+  silent: true
+  tasks:
+    - bash: |
+        wezterm cli set-tab-title "${GIT_WP_PROJECT}:${GIT_WP_BRANCH}"
+"vscode:wp:create":
+  tasks:
+    - bash: |
+        filename="$(echo "${GIT_WP_PROJECT}⸬${GIT_WP_BRANCH}" | sed 's#/#⧸#g').code-workspace"
+        if [[ ! -f "$filename" ]]; then
+          echo '{"folders":[{"path": "."}],"settings":{}}' > "$filename"
+        fi
+"vscode:wp:open":
+  silent: true
+  tasks:
+    - action: vscode:wp:create
+    - bash: |
+        filename="$(echo "${GIT_WP_PROJECT}⸬${GIT_WP_BRANCH}" | sed 's#/#⧸#g').code-workspace"
+        open "$filename"
