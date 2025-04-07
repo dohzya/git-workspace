@@ -421,12 +421,13 @@ async function copyConfig(
 
 if (import.meta.main) {
   try {
-    const { _: [cmd, ...rest], quiet, worktree } = parseArgs(Deno.args, {
+    const { _: [cmd, ...rest], main, quiet, worktree } = parseArgs(Deno.args, {
       stopEarly: true,
-      string: ["worktree"],
+      string: ["worktree", "main"],
       boolean: ["quiet"],
       alias: {
         "wk": "worktree",
+        "m": "main",
         "q": "quiet",
       },
     });
@@ -440,11 +441,6 @@ if (import.meta.main) {
       const projectName = Deno.args.at(1) ?? die(1, "Missing project name");
       await initWorkspace(projectName);
     } else {
-      const mainWorktree = await Git.retrieveMainWorktree();
-      if (mainWorktree === undefined) {
-        die(1, "No main worktree found");
-      }
-
       const currentWorktree = await Git.retrieveCurrentWorktree();
       const targetWorktree = worktree ?? currentWorktree;
       const config = await readConfig({ dir: worktree ?? currentWorktree });
@@ -467,12 +463,18 @@ if (import.meta.main) {
       ];
 
       if (cmd === "create") {
+        const mainWorktree = main ?? await Git.retrieveMainWorktree();
+        if (mainWorktree === undefined) die(1, "No main worktree found");
         const branch = Deno.args.at(1) ?? die(1, "Missing branch name");
         await createWorktree(targetWorktree, branch, { mainWorktree });
       } else if (cmd === "open") {
+        const mainWorktree = main ?? await Git.retrieveMainWorktree();
+        if (mainWorktree === undefined) die(1, "No main worktree found");
         const branch = Deno.args.at(1);
         await openWorktree(targetWorktree, { branch, mainWorktree });
       } else if (cmd === "delete") {
+        const mainWorktree = main ?? await Git.retrieveMainWorktree();
+        if (mainWorktree === undefined) die(1, "No main worktree found");
         const {
           force,
           ["delete-branch"]: deleteBranch,
@@ -515,6 +517,8 @@ if (import.meta.main) {
       } else if (cmd === "config:init") {
         await initConfig(targetWorktree);
       } else if (cmd === "config:copy") {
+        const mainWorktree = main ?? await Git.retrieveMainWorktree();
+        if (mainWorktree === undefined) die(1, "No main worktree found");
         const { from, to, force } = parseArgs(args, {
           string: ["from", "to"],
           boolean: ["force"],
