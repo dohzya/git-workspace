@@ -475,6 +475,12 @@ if (import.meta.main) {
       } else if (cmd === "delete") {
         const mainWorktree = main ?? await Git.retrieveMainWorktree();
         if (mainWorktree === undefined) die(1, "No main worktree found");
+        if (targetWorktree === undefined) {
+          die(1, "Could not find the worktree to delete");
+        }
+        if (targetWorktree === mainWorktree) {
+          die(1, "Cannot delete the main worktree");
+        }
         const {
           force,
           ["delete-branch"]: deleteBranch,
@@ -500,10 +506,6 @@ if (import.meta.main) {
             M: "force-delete-main",
           },
         });
-
-        if (targetWorktree === undefined) {
-          die(1, "Could not find the worktree to delete");
-        }
 
         await deleteWorktree(
           targetWorktree,
