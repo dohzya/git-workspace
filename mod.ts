@@ -299,6 +299,7 @@ interface WorktreeActionOptions {
   nested?: boolean;
   env?: Record<string, string | undefined>;
   silent?: boolean;
+  mainWorktree: string | undefined;
 }
 async function worktreeAction(options: WorktreeActionOptions) {
   const {
@@ -312,6 +313,7 @@ async function worktreeAction(options: WorktreeActionOptions) {
       GIT_WP_BRANCH: await Git.retrieveCurrentBranch(worktree),
       GIT_WP_ACTION: actionName,
       GIT_WP_PROJECT: await Git.retrieveProjectName(),
+      GIT_WP_MAIN_PATH: options.mainWorktree,
     },
     silent,
   } = options;
@@ -553,19 +555,23 @@ if (import.meta.main) {
 
         await copyConfig(fromWorktree, toWorktree, { force });
       } else if (cmd === "action") {
+        const mainWorktree = main ?? await Git.retrieveMainWorktree();
         const { _: [action, ...rest] } = parseArgs(args, { stopEarly: true });
         await worktreeAction({
           worktree: targetWorktree,
           actionName: action.toString(),
           args: rest.map((a) => a.toString()),
           config,
+          mainWorktree,
         });
       } else if (isWorktreeAction(cmd)) {
+        const mainWorktree = main ?? await Git.retrieveMainWorktree();
         await worktreeAction({
           worktree: targetWorktree,
           actionName: cmd,
           args,
           config,
+          mainWorktree,
         });
       } else {
         const msg = cmd ? `Unknown command: "${cmd}"` : "Missing command";
