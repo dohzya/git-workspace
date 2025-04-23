@@ -309,10 +309,15 @@ async function worktreeAction(options: WorktreeActionOptions) {
     config,
     nested = false,
     env = {
-      GIT_WP_ACTION: actionName,
-      GIT_WP_BARE: await Git.retrieveBareRepoPath(),
-      GIT_WP_BRANCH: await Git.retrieveCurrentBranch(worktree),
+      GIT_WP_ACTION_NAME: actionName,
+      GIT_WP_BARE_PATH: await Git.retrieveBareRepoPath(),
+      GIT_WP_BRANCH_NAME: await Git.retrieveCurrentBranch(worktree),
       GIT_WP_MAIN_PATH: options.mainWorktree,
+      GIT_WP_PROJECT_NAME: await Git.retrieveProjectName(),
+      GIT_WP_WORKTREE_PATH: worktree,
+      // deprecated
+      GIT_WP_ACTION: actionName,
+      GIT_WP_BRANCH: await Git.retrieveCurrentBranch(worktree),
       GIT_WP_PROJECT: await Git.retrieveProjectName(),
       GIT_WP_WORKTREE: worktree,
     },

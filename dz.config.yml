@@ -4,6 +4,16 @@ install:
         deno lint
         deno run compile
 
+env:
+  tasks:
+    - bash: |
+        echo "GIT_WP_ACTION_NAME: $GIT_WP_ACTION_NAME"
+        echo "GIT_WP_BARE_PATH: $GIT_WP_BARE_PATH"
+        echo "GIT_WP_BRANCH_NAME: $GIT_WP_BRANCH_NAME"
+        echo "GIT_WP_MAIN_PATH: $GIT_WP_MAIN_PATH"
+        echo "GIT_WP_PROJECT_NAME: $GIT_WP_PROJECT_NAME"
+        echo "GIT_WP_WORKTREE_PATH: $GIT_WP_WORKTREE_PATH"
+
 "tab:title":
   silent: true
   tasks:
