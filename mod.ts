@@ -199,7 +199,7 @@ async function openWorktree(
         });
       }
     }
-    const selectedIdx = await $.select({
+    const selectedIdx = worktrees.length === 1 ? 0 : await $.select({
       message: `Choose a worktree to open`,
       options: worktrees.map((o) => o.title),
       initialIndex: worktrees.findIndex((o) => o.worktree === currentWorktree),
