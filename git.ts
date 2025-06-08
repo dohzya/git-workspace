@@ -10,8 +10,12 @@ export async function retrieveBareRepoPath(): Promise<string> {
 }
 
 export async function retrieveMainBranch(): Promise<string> {
-  return Deno.env.get("GIT_WP_MAIN_BRANCH") ??
-    await $`git config init.defaultBranch`.text() ?? "main";
+  const envValue = Deno.env.get("GIT_WP_MAIN_BRANCH");
+  if (envValue) return envValue;
+
+  const configValue = (await $`git config init.defaultBranch || true`.text())
+    .trim();
+  return configValue.length > 0 ? configValue : "main";
 }
 
 export async function retrieveWorktree(
@@ -98,14 +102,14 @@ export async function listWorktrees(): Promise<WorktreeListItem[]> {
   let current: Record<string, string | boolean> | undefined = {};
   for (const line of output) {
     if (line.length === 0) {
-      if (current !== undefined) {
-        listing.push(current as unknown as WorktreeListItem);
+      if (current !== undefined && Object.keys(current).length > 0) {
+        listing.push(WorktreeListItemSchema.parse(current));
       }
       current = {};
       continue;
     }
 
-    const [field, value] = line.split(" ");
+    const [field, value] = line.split(/\s+/, 2);
 
     switch (field) {
       case "worktree":
