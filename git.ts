@@ -102,8 +102,8 @@ export async function listWorktrees(): Promise<WorktreeListItem[]> {
   let current: Record<string, string | boolean> | undefined = {};
   for (const line of output) {
     if (line.length === 0) {
-      if (current !== undefined) {
-        listing.push(current as unknown as WorktreeListItem);
+      if (current !== undefined && Object.keys(current).length > 0) {
+        listing.push(WorktreeListItemSchema.parse(current));
       }
       current = {};
       continue;
