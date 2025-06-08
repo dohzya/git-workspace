@@ -109,7 +109,7 @@ export async function listWorktrees(): Promise<WorktreeListItem[]> {
       continue;
     }
 
-    const [field, value] = line.split(" ");
+    const [field, value] = line.split(/\s+/, 2);
 
     switch (field) {
       case "worktree":
