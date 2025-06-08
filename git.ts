@@ -10,8 +10,12 @@ export async function retrieveBareRepoPath(): Promise<string> {
 }
 
 export async function retrieveMainBranch(): Promise<string> {
-  return Deno.env.get("GIT_WP_MAIN_BRANCH") ??
-    await $`git config init.defaultBranch`.text() ?? "main";
+  const envValue = Deno.env.get("GIT_WP_MAIN_BRANCH");
+  if (envValue) return envValue;
+
+  const configValue = (await $`git config init.defaultBranch || true`.text())
+    .trim();
+  return configValue.length > 0 ? configValue : "main";
 }
 
 export async function retrieveWorktree(
