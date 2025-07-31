@@ -155,16 +155,17 @@ async function createWorktree(
   });
 
   // TODO
-  info(`Copying dz config...`);
-  await progress(async () => {
-    const existingConfig = await Deno.open(
-      path.join(currentWorktree, Config.CONFIG_FILENAME),
-    );
-    await Deno.writeFile(
-      path.join(worktree, Config.CONFIG_FILENAME),
-      existingConfig.readable,
-    );
-  });
+  const configPath = path.join(currentWorktree, Config.CONFIG_FILENAME);
+  if (await exists(configPath, { isFile: true })) {
+    info(`Copying dz config...`);
+    await progress(async () => {
+      const existingConfig = await Deno.open(configPath);
+      await Deno.writeFile(
+        path.join(worktree, Config.CONFIG_FILENAME),
+        existingConfig.readable,
+      );
+    });
+  }
 
   return worktree;
 }
