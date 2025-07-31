@@ -9,6 +9,10 @@ export async function retrieveBareRepoPath(): Promise<string> {
   return await $`git rev-parse --path-format=absolute --git-common-dir`.text();
 }
 
+export async function retrieveWorktreeGitDir(): Promise<string> {
+  return await $`git rev-parse --path-format=absolute --git-dir`.text();
+}
+
 export async function retrieveMainBranch(): Promise<string> {
   return Deno.env.get("GIT_WP_MAIN_BRANCH") ??
     await $`git config init.defaultBranch`.text() ?? "main";
@@ -29,7 +33,7 @@ export async function retrieveMainWorktree(): Promise<string | undefined> {
 }
 
 export async function retrieveCurrentBranch(
-  worktree?: string,
+  worktree?: string | undefined,
 ): Promise<string> {
   const cmd = $`git rev-parse --git-dir`;
   const gitDir = await (worktree === undefined ? cmd : cmd.cwd(worktree))

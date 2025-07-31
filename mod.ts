@@ -4,6 +4,7 @@ import $, { CommandChild } from "@david/dax";
 import { parseArgs } from "@std/cli";
 import { exists } from "@std/fs/exists";
 import * as path from "@std/path/join";
+import { basename } from "@std/path/basename";
 
 import {
   die,
@@ -317,6 +318,39 @@ async function deleteWorktree(
   });
 }
 
+async function genEnv(
+  worktree: string | undefined,
+  mainWorktree: string | undefined,
+): Promise<Record<string, string | undefined>> {
+  return {
+    GIT_WP_BARE_PATH: await Git.retrieveBareRepoPath(),
+    GIT_WP_BRANCH_NAME: await Git.retrieveCurrentBranch(worktree),
+    GIT_WP_MAIN_PATH: mainWorktree,
+    GIT_WP_PROJECT_NAME: await Git.retrieveProjectName(),
+    GIT_WP_WORKTREE_PATH: worktree,
+    GIT_WP_WORKTREE_GIT_DIR: await Git.retrieveWorktreeGitDir(),
+  };
+}
+
+interface WorktreeRunOptions {
+  worktree: string | undefined;
+  command: string[];
+  mainWorktree: string | undefined;
+}
+async function worktreeRun({
+  worktree,
+  command,
+  mainWorktree,
+}: WorktreeRunOptions) {
+  const env = await genEnv(worktree, mainWorktree);
+  const cmd = $`bash`.env(env)
+    .stdinText(command.map($.escapeArg).join(" ")).spawn();
+  const killCmd = () => cmd.kill("SIGINT");
+  Deno.addSignalListener("SIGINT", killCmd);
+  await cmd;
+  Deno.removeSignalListener("SIGINT", killCmd);
+}
+
 interface WorktreeActionOptions {
   worktree: string | undefined;
   actionName: string;
@@ -335,12 +369,8 @@ async function worktreeAction(options: WorktreeActionOptions) {
     config,
     nested = false,
     env = {
+      ...(await genEnv(worktree, options.mainWorktree)),
       GIT_WP_ACTION_NAME: actionName,
-      GIT_WP_BARE_PATH: await Git.retrieveBareRepoPath(),
-      GIT_WP_BRANCH_NAME: await Git.retrieveCurrentBranch(worktree),
-      GIT_WP_MAIN_PATH: options.mainWorktree,
-      GIT_WP_PROJECT_NAME: await Git.retrieveProjectName(),
-      GIT_WP_WORKTREE_PATH: worktree,
       // deprecated
       GIT_WP_ACTION: actionName,
       GIT_WP_BRANCH: await Git.retrieveCurrentBranch(worktree),
@@ -376,7 +406,7 @@ async function worktreeAction(options: WorktreeActionOptions) {
             actionName: task.action,
             args: task.args ?? args,
             nested: true,
-            env,
+            env: task.env ? { ...env, ...task.env } : env,
             silent: task.silent,
           });
         } else if (task.type === "shell") {
@@ -593,6 +623,52 @@ if (import.meta.main) {
         }
 
         await copyConfig(fromWorktree, toWorktree, { force });
+      } else if (cmd === "run") {
+        const mainWorktree = main ?? await Git.retrieveMainWorktree();
+        const { _: command } = parseArgs(args, { stopEarly: true });
+        await worktreeRun({
+          worktree: targetWorktree,
+          command: command.map((a) => a.toString()),
+          mainWorktree,
+        });
+      } else if (cmd === "env") {
+        const mainWorktree = main ?? await Git.retrieveMainWorktree();
+        const { only, shell } = parseArgs(args, {
+          string: ["shell"],
+          boolean: ["only"],
+          negatable: ["only"],
+          alias: { o: "only", s: "shell" },
+          default: { shell: Deno.env.get("SHELL") ?? "bash" },
+          stopEarly: true,
+        });
+        const envOnly = await genEnv(targetWorktree, mainWorktree);
+        const envGlobal = only ? {} : Deno.env.toObject();
+        let shellType: "fish" | "sh";
+        switch (basename(shell)) {
+          case "fish":
+            shellType = "fish";
+            break;
+          case "bash":
+          case "zsh":
+          case "sh":
+            shellType = "sh";
+            break;
+          default:
+            die(1, `Unsupported shell: ${shell}`);
+        }
+        const envStr = Object.entries({ ...envGlobal, ...envOnly })
+          .filter(([_, v]) => v !== undefined)
+          .map(
+            ([key, value]) => {
+              switch (shellType) {
+                case "fish":
+                  return `set -gx ${key} ${value ?? ""}`;
+                case "sh":
+                  return `${key}=${value ?? ""}`;
+              }
+            },
+          ).toSorted();
+        console.log(envStr.join("\n"));
       } else if (cmd === "action") {
         const mainWorktree = main ?? await Git.retrieveMainWorktree();
         const { _: [action, ...rest] } = parseArgs(args, { stopEarly: true });
