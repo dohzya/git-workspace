@@ -1,0 +1,47 @@
+version: "3"
+
+vars:
+  GIT_WORKSPACE_ENV: ".git-workspace-env"
+
+dotenv:
+  - "{{.GIT_WORKSPACE_ENV}}"
+
+tasks:
+  bootstrap:
+    cmds:
+      - cd "$GIT_WP_WORKTREE_PATH" && git-workspace env | grep GIT_WP > {{.GIT_WORKSPACE_ENV}}
+      - cp "$GIT_WP_BARE_PATH/../Taskfile.yml" "$GIT_WP_WORKTREE_PATH/Taskfile.yml"
+      - cd "$GIT_WP_WORKTREE_PATH" && task setup
+  setup:
+    cmds:
+      - task: tab:title
+
+  install:
+    cmds:
+      - deno lint
+      - deno run compile
+
+  tab:title:
+    silent: true
+    cmds:
+      - |
+          args="$GIT_WP_PROJECT_NAME:$GIT_WP_BRANCH_NAME"
+          for arg in "$@"; do args="${args}:${arg}"; done
+          wezterm cli set-tab-title "$(echo "$args" | sed -e 's/^://' -e 's/::*/:/g')"
+
+  vscode:create:
+    silent: true
+    cmds:
+      - |
+          filename="$(echo "${GIT_WP_PROJECT_NAME}⸬${GIT_WP_BRANCH_NAME}" | sed 's#/#⧸#g').code-workspace"
+          if [[ ! -f "$filename" ]]; then
+            echo '{"folders":[{"path": "."}],"settings":{}}' > "$filename"
+          fi
+
+  vscode:open:
+    silent: true
+    cmds:
+      - task: vscode:create
+      - |
+          filename="$(echo "${GIT_WP_PROJECT_NAME}⸬${GIT_WP_BRANCH_NAME}" | sed 's#/#⧸#g').code-workspace"
+          code --profile Deno "$filename" &> /dev/null
