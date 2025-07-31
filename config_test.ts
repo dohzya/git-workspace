@@ -15,9 +15,12 @@ Deno.test("readConfig returns a valid config", async function () {
         tasks:
           - action: action2
           - type: action
-            args: --foo
+            args:
+              - --foo
             action: action3
     `,
   });
-  assertEquals(config.action1.tasks[0], { type: "action", action: "action2" });
+  const task0 = config.action1.tasks[0] as { type: "action"; action: string };
+  assertEquals(task0.type, "action");
+  assertEquals(task0.action, "action2");
 });
