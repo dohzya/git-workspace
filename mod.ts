@@ -107,11 +107,12 @@ async function initWorkspace(
 interface CreateWorktreeOptions {
   readonly nocheck?: boolean;
   readonly mainWorktree: string;
+  readonly upstream?: string;
 }
 async function createWorktree(
   currentWorktree: string,
   branch: string,
-  { nocheck = false, mainWorktree }: CreateWorktreeOptions,
+  { nocheck = false, mainWorktree, upstream }: CreateWorktreeOptions,
 ): Promise<string> {
   if (!nocheck) {
     const worktree = await Git.retrieveWorktree(branch);
@@ -123,12 +124,33 @@ async function createWorktree(
   const mainBranch = await Git.retrieveMainBranch();
   const worktree = mainWorktree.replace(mainBranch, branch);
 
+  if (upstream) {
+    const upstreamExists =
+      (await $`git show-ref --verify refs/remotes/${upstream}`.noThrow())
+        .code === 0;
+    if (!upstreamExists) {
+      die(1, `Upstream branch ${upstream} does not exist`);
+    }
+  }
+
   info(`Creating worktree for ${branch}...`);
   await progress(async () => {
-    if ((await $`git branch --list ${branch}`.text()).trim().length === 0) {
-      await $`git worktree add -b ${branch} ${worktree}`;
-    } else {
+    const branchExists =
+      (await $`git branch --list ${branch}`.text()).trim().length > 0;
+
+    if (upstream) {
+      if (branchExists) {
+        await $`git worktree add ${worktree} ${branch}`;
+      } else {
+        await $`git worktree add -b ${branch} ${worktree} ${upstream}`;
+        await $`git branch --set-upstream-to=${upstream} ${branch}`.cwd(
+          worktree,
+        );
+      }
+    } else if (branchExists) {
       await $`git worktree add ${worktree} ${branch}`;
+    } else {
+      await $`git worktree add -b ${branch} ${worktree}`;
     }
   });
 
@@ -170,12 +192,14 @@ async function closeTab(): Promise<string> {
 interface OpenWorktreeOptions {
   branch?: string;
   mainWorktree: string;
+  upstream?: string;
 }
 async function openWorktree(
   currentWorktree: string,
   {
     branch,
     mainWorktree,
+    upstream,
   }: OpenWorktreeOptions,
 ) {
   let worktree: string | undefined;
@@ -219,6 +243,7 @@ async function openWorktree(
       const createdWorktree = await createWorktree(currentWorktree, branch, {
         nocheck: true,
         mainWorktree: mainWorktree,
+        upstream,
       });
       await openTab(createdWorktree, branch);
     } else {
@@ -429,16 +454,20 @@ async function copyConfig(
 
 if (import.meta.main) {
   try {
-    const { _: [cmd, ...rest], main, quiet, worktree } = parseArgs(Deno.args, {
-      stopEarly: true,
-      string: ["worktree", "main"],
-      boolean: ["quiet"],
-      alias: {
-        "wk": "worktree",
-        "m": "main",
-        "q": "quiet",
+    const { _: [cmd, ...rest], main, quiet, worktree, upstream } = parseArgs(
+      Deno.args,
+      {
+        stopEarly: true,
+        string: ["worktree", "main", "upstream"],
+        boolean: ["quiet"],
+        alias: {
+          "wk": "worktree",
+          "m": "main",
+          "q": "quiet",
+          "u": "upstream",
+        },
       },
-    });
+    );
     const args = rest.map((a) => a.toString());
 
     if (quiet) {
@@ -474,12 +503,15 @@ if (import.meta.main) {
         const mainWorktree = main ?? await Git.retrieveMainWorktree();
         if (mainWorktree === undefined) die(1, "No main worktree found");
         const branch = Deno.args.at(1) ?? die(1, "Missing branch name");
-        await createWorktree(targetWorktree, branch, { mainWorktree });
+        await createWorktree(targetWorktree, branch, {
+          mainWorktree,
+          upstream,
+        });
       } else if (cmd === "open") {
         const mainWorktree = main ?? await Git.retrieveMainWorktree();
         if (mainWorktree === undefined) die(1, "No main worktree found");
         const branch = Deno.args.at(1);
-        await openWorktree(targetWorktree, { branch, mainWorktree });
+        await openWorktree(targetWorktree, { branch, mainWorktree, upstream });
       } else if (cmd === "delete") {
         const mainWorktree = main ?? await Git.retrieveMainWorktree();
         if (mainWorktree === undefined) die(1, "No main worktree found");
